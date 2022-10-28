@@ -1,0 +1,267 @@
+---
+title: "FDP_POWER"
+author: "Linsui Deng"
+date: "2021/4/20"
+output: html_document
+---
+
+```{r}
+#==== Set root
+rm(list=ls())
+#library(plyr)
+#setwd("~/project/2DSpatial")
+#setwd("D:/RUC/project/multiple\ testing/2DSpatial")
+root <- 'Result/Simulation1D/2d_smoothing_k1(size1)'
+
+root <- 'Result/Simulation1D'
+root <- 'Result/Simulation1D_Mv'
+root <- 'Result/Simulation1D_unif'
+Print_dir <- dir(path=root,pattern="*size1const0.1.*FALSE$*",full.names = T)
+#root <- 'Result/Simulation2D'
+#Print_dir <- 'Result/Simulation2D'
+```
+
+```{r fdr_pow_output}
+fdp_Res <- NULL
+pow_Res <- NULL
+fdp_Res_se <- NULL
+pow_Res_se <- NULL
+fdp_Res_t <- NULL
+pow_Res_t <- NULL
+fdp_Res_f <- NULL
+pow_Res_f <- NULL
+Mag_all <- NULL
+R_prop <- NULL
+Mag_t <- NULL
+R_prop_t <- NULL
+mu_type_t <- NULL
+Cov_type_t <- NULL
+Mag_f <- NULL
+R_prop_f <- NULL
+mu_type_f <- NULL
+Cov_type_f <- NULL
+mu_type_all <- NULL
+Cov_type_all <- NULL
+Estcov <- NULL
+for(print_dir in Print_dir){
+Print_file_full <- list.files(print_dir,pattern="*.RData",full.names = T)
+  
+for(print_file_full in Print_file_full){
+  load(print_file_full)
+  print(print_file_full)
+  #print(length(fdp_Res))
+  fdp_Res <- c(fdp_Res, fdp_pow_print[1,])
+  pow_Res <- c(pow_Res, fdp_pow_print[2,])
+  fdp_Res_se <- c(fdp_Res_se, apply(fdp_res,2,sd)/sqrt(dim(fdp_res)[2]))
+  pow_Res_se <- c(pow_Res_se, apply(pow_res,2,sd)/sqrt(dim(pow_res)[2]))
+  mu_type_all <- c(mu_type_all,mu_type)
+  Cov_type_all <- c(Cov_type_all,Cov_type)
+  Mag_all <- c(Mag_all,magnitude)
+  #R_prop <- c(R_prop, R)
+  if(estcov){
+  fdp_Res_t <- c(fdp_Res_t, fdp_pow_print[1,])
+  pow_Res_t <- c(pow_Res_t, fdp_pow_print[2,])
+  mu_type_t <- c(mu_type_t,mu_type)
+  Cov_type_t <- c(Cov_type_t,Cov_type)
+  Mag_t <- c(Mag_t,magnitude)
+  }else{
+  fdp_Res_f <- c(fdp_Res_f, fdp_pow_print[1,])
+  pow_Res_f <- c(pow_Res_f, fdp_pow_print[2,])
+  mu_type_f <- c(mu_type_f,mu_type)
+  Cov_type_f <- c(Cov_type_f,Cov_type)
+  Mag_f <- c(Mag_f,magnitude)
+  }
+}
+}
+fdp_res_t <- c(fdp_Res_t,c())
+fdp_res_f <- c(fdp_Res_f,c())
+```
+
+```{r ReorganizeData:ad_hoc}
+library(reshape2)
+Method <- colnames(fdp_pow_print)
+fp_type <- c("fdp","pow")
+mth_type_0 <- c("BH","Storey","LAWS","SABHA","IHW","IHW(NULL)")
+#mth_type_0 <- c("BH","LAWS","SABHA","Storey","IHW","IHW(NULL)")
+mth_type_1 <- c("nopis","laws","sabha","pis2","ihw","ihw.null")
+mth_type_2 <- c("",".laws",".sabha",".pis2",".ihw",".ihw.null")
+for(ms in c("","_se")){
+for(fp_ind in 1:2){
+  tmp.data <- get(paste0(paste0(fp_type[fp_ind],"_Res"),ms))
+  assign(paste0(paste0(fp_type[fp_ind],"_org_","Res"),ms),
+           tmp.data[names(tmp.data)%in%mth_type_0])
+  for(j in 1:length(mth_type_1)){
+    tmp.name <- c(paste0("1D",mth_type_2[j]),
+                  paste(paste0("2D",mth_type_2[j]),h,sep = " "))
+    tmp.data <- get(paste0(paste0(fp_type[fp_ind],"_Res"),ms))
+    assign(paste0(paste0(fp_type[fp_ind],"_",mth_type_1[j],"_","Res"),ms),
+           tmp.data[names(tmp.data)%in%tmp.name])
+  }
+}
+}
+```
+
+
+
+```{r ReorganizeData_WithoutTF}
+library(reshape2)
+Method <-c(0,h)
+Method_num <- length(Method)
+data <- data.frame(FDP=c(fdp_nopis_Res,fdp_laws_Res,fdp_sabha_Res,fdp_pis2_Res,fdp_ihw_Res,fdp_ihw.null_Res),
+                   POWER=c(pow_nopis_Res,pow_laws_Res,pow_sabha_Res,pow_pis2_Res,pow_ihw_Res,pow_ihw.null_Res),
+                   FDP_se=c(fdp_nopis_Res_se,fdp_laws_Res_se,fdp_sabha_Res_se,fdp_pis2_Res_se,fdp_ihw_Res_se,fdp_ihw.null_Res_se),
+                   POWER_se=c(pow_nopis_Res_se,pow_laws_Res_se,pow_sabha_Res_se,pow_pis2_Res_se,pow_ihw_Res_se,pow_ihw.null_Res_se),
+                   magnitude=c(paste("mag:",rep(rep(Mag_all, each=Method_num),times = 6))#,
+                               #paste("mag:",rep(rep(Mag_f, each=Method_num),times = 4))
+                               ),
+                   mu_type=c(rep(rep(mu_type_all, each=Method_num),times=6)#,
+                       #paste("r:",rep(rep(R_prop_f, each=Method_num),times=4))
+                       ),
+                   Cov_type=c(rep(rep(Cov_type_all, each=Method_num),times=6)#,
+                       #paste("r:",rep(rep(R_prop_f, each=Method_num),times=4))
+                       ),
+                   h=c(rep(Method,times=length(Mag_all)*6)#,
+                       #rep(Method,times=length(Mag_f)*4)
+                       ),
+                   type = #paste(rep(rep(c("no_pis","pis","pis2","qhat"),each = length(fdp_Res_t)),times = 2),rep(c("est","true"),each=4*length(fdp_Res_t)))
+                     rep(c("no_pis","laws","sabha","pis2","ihw","ihw.null"),each = length(fdp_nopis_Res)),
+                   Dim = "2D"
+                   )
+```
+
+```{r}
+data$Method <- plyr::revalue(data$type, c("no_pis"="BH",
+                                      "laws"="LAWS",
+                                      "sabha"="SABHA",
+                                      "pis2"="ST",
+                                      "ihw"="IHW",
+                                      "ihw.null"="IHW.N"))
+```
+
+
+
+```{r TheOrignAlg}
+library(dplyr)
+Method2 <- mth_type_0
+Method2_num <- length(Method2)
+data2 <- data.frame(FDP = fdp_org_Res, POWER = pow_org_Res,
+                    FDP_se = fdp_org_Res_se, POWER_se = pow_org_Res_se,
+                    magnitude=paste("mag:",rep(Mag_all, each=Method2_num)),
+                    mu_type = rep(mu_type_all, each=Method2_num),
+                    Cov_type = rep(Cov_type_all, each=Method2_num),
+                    h = rep(-5,length(fdp_org_Res)),
+                    type = #Plz check the orderm, it should match Method2
+                     rep(c("no_pis","pis2","laws","sabha","ihw","ihw.null"),times = length(fdp_org_Res)/Method2_num),
+                    Dim = "1D"
+                    )
+data2$Method <- plyr::revalue(data2$type, c("no_pis"="BH",
+                                      "laws"="LAWS",
+                                      "sabha"="SABHA",
+                                      "pis2"="ST",
+                                      "ihw"="IHW",
+                                      "ihw.null"="IHW.N"))
+Data <- rbind(data,data2)
+Data <- Data %>% mutate(mu_type = factor(mu_type,levels=c("Sparse","Medium","Dense")),
+                Cov_type = factor(Cov_type,levels=c("Weak","Medium","Strong"))) %>%
+  filter(!(Method %in% c("LAWS","IHW.N")))
+  
+```
+
+
+```{r Plot Graph_fdp_Without_TF}
+library(ggplot2)
+library(RColorBrewer)
+cols=brewer.pal(n = 12, name = "Paired")[2*(1:6)]
+
+
+if(root == 'Result/Simulation1D_Mv'){
+Data1 <- Data %>% filter(magnitude=="mag: 2")
+}
+
+if(root == 'Result/Simulation1D_unif'){
+Data1 <- Data %>% filter(magnitude=="mag: 1")
+}
+
+if(root == 'Result/Simulation1D'){
+Data1 <- Data %>% filter(magnitude=="mag: 2")
+}
+dummy1 <- data.frame(variable="FDP",q=c(q))
+p <-
+  ggplot(data=Data1,aes(x=h,y=FDP,color=Method, linetype=Method,
+                       shape = Dim,
+                       fill = Dim))+
+  geom_point()+
+  geom_line(data=Data1 %>% filter(Dim=="2D"),aes(x=h,y=FDP,color=Method, linetype=Method))+
+  scale_x_continuous(breaks=c(-5, 0, 5,10,15),
+                   labels=c("1D", 0, 5,10,15))+
+ # ylim(c(0,0.4))+
+  geom_errorbar(aes(ymin=FDP-FDP_se, ymax=FDP+FDP_se), width=.2,
+                 position=position_dodge(0.05))+
+  facet_grid(mu_type ~ Cov_type,scales = "free_y")+
+  geom_hline(data=dummy1,aes(yintercept = q),linetype=2)+
+  scale_color_manual(values = cols)+
+  scale_fill_manual(values = cols)+
+  theme_bw()+
+  theme(#panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 15),
+        strip.text.y = element_text(size = 15),
+        axis.title=element_text(size=15),
+        axis.text=element_text(size=12))+
+  xlab("Num of Neighors")+ylab("False Discovery Proportion")
+
+p
+if(root == 'Result/Simulation1D_Mv'){
+  ggsave(file="Figure/Mv_FDP(mag2)_h.eps",width = 12, height =6)
+}
+
+if(root == 'Result/Simulation1D_unif'){
+  ggsave(file="Figure/Unif_FDP(mag2)_h.eps",width = 12, height =6)
+}
+
+if(root == 'Result/Simulation1D'){
+  ggsave(file="Figure/Spline_FDP(mag2)_h.eps",width = 12, height =6)
+}
+```
+
+
+```{r Plot Graph_pow_WithoutTF}
+p <-
+  ggplot(data=Data1,aes(x=h,y=POWER,color=Method, linetype=Method,
+                       shape = Dim,
+                       fill = Dim))+
+  geom_point()+
+  geom_line(data=Data1 %>% filter(Dim=="2D"),aes(x=h,y=POWER,color=Method, linetype=Method))+
+  scale_x_continuous(breaks=c(-5, 0, 5,10,15),
+                   labels=c("1D", 0, 5,10,15))+
+  geom_errorbar(aes(ymin=POWER-POWER_se, ymax=POWER+POWER_se), width=.2,
+                 position=position_dodge(0.05))+
+  facet_grid(mu_type ~ Cov_type,scales = "free_y")+
+  scale_color_manual(values = cols)+
+  scale_fill_manual(values = cols)+
+  theme_bw()+
+  theme(#panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 15),
+        strip.text.y = element_text(size = 15),
+        axis.title=element_text(size=15),
+        axis.text=element_text(size=12))+
+  xlab("Num of Neighors")+ylab("Percentage of Discoveries")
+p
+#data1%>%filter(magnitude=="mag: 1"&r=="r: 0.5")
+if(root == 'Result/Simulation1D_Mv'){
+  ggsave(file="Figure/Mv_POWER(mag2)_h.eps",width = 12, height =6)
+}
+
+if(root == 'Result/Simulation1D_unif'){
+  ggsave(file="Figure/Unif_POWER(mag2)_h.eps",width = 12, height =6)
+}
+
+if(root == 'Result/Simulation1D'){
+  ggsave(file="Figure/Spline_POWER(mag2)_h.eps",width = 12, height =6)
+}
+
+#ggsave(file="Figure/Spline_POWER(mag2)_h.eps",width = 12, height =6)
+#ggsave(file="Figure/Unif_POWER(mag1)_h.eps",width = 12, height =6)
+#
+```

@@ -1,0 +1,168 @@
+---
+title: "FDP_POWER"
+author: "Linsui Deng"
+date: "2021/4/20"
+output: html_document
+---
+
+```{r}
+#==== Set root
+rm(list=ls())
+setwd("~/project/2DSpatial")
+#setwd("D:/RUC/project/multiple\ testing/2DSpatial")
+root <- 'Result/Simulation1D/2d_smoothing_k1(size1)'
+
+root <- 'Result/Simulation2D'
+Print_dir <- dir(path=root,pattern="*thin$*",full.names = T)
+#Print_dir <- dir(path=root,pattern="*size1*",full.names = T)
+```
+
+```{r fdr_pow_output}
+fdp_Res <- NULL
+pow_Res <- NULL
+fdp_Res_se <- NULL
+pow_Res_se <- NULL
+fdp_Res_t <- NULL
+pow_Res_t <- NULL
+fdp_Res_f <- NULL
+pow_Res_f <- NULL
+Mag_all <- NULL
+R_prop <- NULL
+Mag_t <- NULL
+R_prop_t <- NULL
+mu_type_t <- NULL
+Cov_type_t <- NULL
+Mag_f <- NULL
+R_prop_f <- NULL
+mu_type_f <- NULL
+Cov_type_f <- NULL
+mu_type_all <- NULL
+Cov_type_all <- NULL
+Estcov <- NULL
+for(print_dir in Print_dir){
+Print_file_full <- list.files(print_dir,pattern="*.RData",full.names = T)
+  
+for(print_file_full in Print_file_full){
+  load(print_file_full)
+  print(print_file_full)
+  #print(length(fdp_Res))
+  fdp_Res <- c(fdp_Res, fdp_pow_print[1,])
+  pow_Res <- c(pow_Res, fdp_pow_print[2,])
+  fdp_Res_se <- c(fdp_Res_se, apply(fdp_res,2,sd)/sqrt(dim(fdp_res)[2]))
+  pow_Res_se <- c(pow_Res_se, apply(pow_res,2,sd)/sqrt(dim(pow_res)[2]))
+  mu_type_all <- c(mu_type_all,mu_type)
+  Cov_type_all <- c(Cov_type_all,Cov_type)
+  Mag_all <- c(Mag_all,magnitude)
+  #R_prop <- c(R_prop, R)
+  if(estcov){
+  fdp_Res_t <- c(fdp_Res_t, fdp_pow_print[1,])
+  pow_Res_t <- c(pow_Res_t, fdp_pow_print[2,])
+  mu_type_t <- c(mu_type_t,mu_type)
+  Cov_type_t <- c(Cov_type_t,Cov_type)
+  Mag_t <- c(Mag_t,magnitude)
+  }else{
+  fdp_Res_f <- c(fdp_Res_f, fdp_pow_print[1,])
+  pow_Res_f <- c(pow_Res_f, fdp_pow_print[2,])
+  mu_type_f <- c(mu_type_f,mu_type)
+  Cov_type_f <- c(Cov_type_f,Cov_type)
+  Mag_f <- c(Mag_f,magnitude)
+  }
+  print(dim(fdp_pow_print))
+}
+}
+fdp_res_t <- c(fdp_Res_t,c())
+fdp_res_f <- c(fdp_Res_f,c())
+```
+
+```{r ReorganizeData}
+library(reshape2)
+Method <- colnames(fdp_pow_print)
+Method <- c("BH","Storey","LAWS","SABHA",
+                      "AdaMT","CAMT","FDRreg(T)",
+                      #"FDRreg(E)",
+                      "dBH(True)","dBH(m_obs)","dBH(s_obs)","IHW","IHW(NULL)",
+                      "1D","1D.laws","1D.sabha", 
+                      "1D.pis2","1D.ihw","1D.ihw.null",
+            paste("S0 ",paste(rep(c("2D.sabha","2D.pis2","2D.ihw"),times=3),rep(2:4,each=3))),
+            paste("S1 ",paste(rep(c("2D.sabha","2D.pis2","2D.ihw"),times=3),rep(2:4,each=3))),
+            paste("S2 ",paste(rep(c("2D.sabha","2D.pis2","2D.ihw"),times=3),rep(2:4,each=3))))
+#Method <-c('BH','1D','1D.pis','1D.pis2','LAW','SABHA',
+#           paste(c("2D","2D.qhat","2D.pis2"),rep(c(1,5,9),each=3)))
+#Method <- paste(Method,rep(c("est","true"),each=length(Method)))
+Method_num <- length(Method)
+data <- data.frame(FDP=fdp_Res,
+                   POWER=pow_Res,
+                   FDP_se=fdp_Res_se,
+                   POWER_se=pow_Res_se,
+                   mu_type=factor(rep(mu_type_all, each=Method_num),
+                                  levels=c("Sparse","Medium","Dense")),
+                   Cov_type=factor(rep(Cov_type_all, each=Method_num),
+                                  levels=c("Weak","Medium","Strong")),
+                   magnitude = rep(Mag_all, each=Method_num),
+                   Alg=rep(Method,times=length(Cov_type)))
+#data <- melt(data,id = c("mu_type","Cov_type","Alg","magnitude"))
+```
+
+```{r AlgSelect}
+library(dplyr)
+if(F){
+data <- 
+  data %>%
+  filter(Alg %in% c("BH true", "LAW true", "SABHA true", 
+                    "SABHA est", 
+                    #"2D 1", 
+                    "2D 1 est", #"2D 9",
+                    #"2D.qhat 1 est", "2D.qhat 9 est",#, "2D.pis 9"
+                    "2D.qhat 9 true","2D.pis2 9 est"
+                    #"2D.adp.pis2 1", 
+                    )
+         )
+}
+```
+
+```{r Plot Graph_1}
+library(ggplot2)
+dummy1 <- data.frame(variable="FDP",q=c(q))
+data_1 <- data %>% filter(!(Alg %in% c("1D","1D.pis","1D.qhat","FDRreg(E)"))) #%>% filter(R==0)
+data_1 <- data %>% filter((!(substr(Alg,1,2) %in% c("1D","2D"))&
+                           !(Alg %in% c("LAWS","BH","IHW","IHW(NULL)","SABHA","CAMT")))|
+                          # !(Alg %in% c()))|
+                          Alg %in% c(#"BH",
+                                     "IHW(NULL)",
+                                     "2D.pis2 4",
+                                     "2D.sabha 4",
+                                     "2D.ihw.null 4"#,
+                                     #"2D.ihw 15"
+                                     )) #%>% filter(R==0)
+p <-
+  ggplot(data=data_1,aes(x=magnitude,y=FDP,
+                         color=Alg,
+                         linetype=Alg))+
+  geom_point(alpha=0.5)+
+  geom_line()+
+  ylim(c(0,1))+
+  geom_errorbar(aes(ymin=FDP-FDP_se, ymax=FDP+FDP_se), width=.2,
+                 position=position_dodge(0.05))+
+  facet_grid(mu_type ~ Cov_type,scales = "free_y")+
+  geom_hline(data=dummy1,aes(yintercept = q),linetype=2)
+p
+#ggsave(file="Figure/Ind_Noise.eps")
+```
+
+```{r Plot Graph_2}
+library(ggplot2)
+#data_1 <- data %>% filter(!(Alg %in% c("1D","1D.pis","1D.qhat","FDRreg(E)"))) #%>% filter(R==0)
+p <-
+  ggplot(data=data_1,aes(x=magnitude,y=POWER,
+                         color=Alg,
+                         linetype=Alg))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=POWER-POWER_se, ymax=POWER+POWER_se), width=.2,
+                 position=position_dodge(0.05))+
+  facet_grid(mu_type ~ Cov_type,scales = "free_y")
+p
+#ggsave(file="Figure/Ind_Noise.eps")
+```
+
+
