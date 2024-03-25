@@ -123,6 +123,7 @@ for(beta0 in beta0.seq){
     mua <- Neigh_Detect_res$mua
     
     #--- 2D Storey
+    is.quick <- T
     res.2D.pis2 <- Spatial_Detect_exact_grp_BH_down(Tm, Ta, Va,
                                                     VmVa.cov, ind,
                                                     q,
@@ -130,7 +131,8 @@ for(beta0 in beta0.seq){
                                                     pis = pis.hata,
                                                     Tm.star = Tm.star.pis2,
                                                     Ta.star = Ta.star.pis2,
-                                                    const = const)
+                                                    const = const,
+                                                    is.quick.stop = is.quick)
     
     selected.2D.pis2 <- res.2D.pis2$selected
     tm <- res.2D.pis2$tm0
@@ -146,7 +148,8 @@ for(beta0 in beta0.seq){
                                                          pws.ta.star = ta.star.ihw,
                                                          const = const,
                                                          ws = ihw.ws,
-                                                         n.group.max = 5)
+                                                         n.group.max = 5,
+                                                         is.quick.stop = is.quick)
     selected.2D.ihw <- res.2D.ihw$selected
     tm <- res.2D.ihw$tm0
     ta <- res.2D.ihw$ta0
@@ -160,7 +163,9 @@ for(beta0 in beta0.seq){
                                                            pws.ta.star = ta.star.sabha,
                                                            const = const,
                                                            ws.fun = ws.sabha.fun,
-                                                           n.group.max = 5)
+                                                           n.group.max = 5,
+                                                           is.quick.stop = is.quick)
+                                                           
     selected.2D.sabha <- res.2D.sabha$selected
     tm <- res.2D.sabha$tm0
     ta <- res.2D.sabha$ta0

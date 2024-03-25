@@ -1,3 +1,4 @@
+## Before run the simulation for Ozone data, please set the dictionary to 2dSMT 
 ##' Ozone Analysis
 #-- Manipulate data
 library(reshape2)
@@ -8,7 +9,7 @@ library(backports)
 library(CompRandFld)
 #-- For detect algorithms
 library(qvalue)
-load("Data/Ozone.RData")
+load("Simu_2dSMT_RealData/Data/Ozone.RData")
 
 #=== Regression
 # Obtain beta_hat/sd(beta_hat)
@@ -116,28 +117,48 @@ corrmodel <- "exponential"
 year.num <- nrow(Res_mat)
 loc.num <- ncol(Res_mat)
 
+save.image("Tmp.RData")
 est.ind <- 1:loc.num
 point.for.cov <- matrix(as.numeric(as.matrix(list2DF(sapply(colnames(Res_mat),
-                              function(x){strsplit(x,split="_")})))),byrow=T,ncol=2)
+                                                            function(x){strsplit(x,split="_")})))),byrow=T,ncol=2)
 est.ind <- 1:loc.num
 rep.ind <- 1:year.num
 rem <- c(10,0.5,0.5)
 names(rem) <- c("scale","sill","nugget")
 fit <- FitComposite(Res_mat[rep.ind,est.ind], coordx=point.for.cov[est.ind,],
-                         corrmodel=corrmodel, likelihood="Full",type="Standard", 
-                         #corrmodel=corrmodel, likelihood='Marginal',type='Pairwise',#optimizer = "CG",  
-                         fixed = list(mean=0), start = as.list(rem),
-                         distance = "Geod",replicates = length(rep.ind))
+                    corrmodel=corrmodel, likelihood="Full",type="Standard", 
+                    #corrmodel=corrmodel, likelihood='Marginal',type='Pairwise',#optimizer = "CG",  
+                    fixed = list(mean=0), start = as.list(rem),
+                    distance = "Geod",replicates = length(rep.ind))
 
 param <- as.list(fit$param)
 
 #--- Estimating the covariance matrix
 cov.est <- Covmatrix(point.for.cov[,1], point.for.cov[,2], 
-                          corrmodel=corrmodel,
-                          distance = "Geod",
-                          param=param)
+                     corrmodel=corrmodel,
+                     distance = "Geod",
+                     param=param)
 Corr.est <- cov.est$covmatrix 
+
+
+#--- Estimating the covariance matrix with gaussian as correlation model
+fit.gau <- FitComposite(Res_mat[rep.ind,est.ind], coordx=point.for.cov[est.ind,],
+                        corrmodel="gauss", likelihood="Full",type="Standard", 
+                        #corrmodel=corrmodel, likelihood='Marginal',type='Pairwise',#optimizer = "CG",  
+                        fixed = list(mean=0), start = as.list(rem),
+                        distance = "Geod",replicates = length(rep.ind))
+
+param.gau <- as.list(fit.gau$param)
+
+cov.est.gau <- Covmatrix(point.for.cov[,1], point.for.cov[,2], 
+                         corrmodel="gauss",
+                         distance = "Geod",
+                         param=param.gau)
+Corr.est.gau <- cov.est.gau$covmatrix 
 #Sigma.eps.est.diff[1:5,1:5]
+
+#--- Estimating the empirical covariance matrix
+Corr.est.emp <- ((t(Res_mat) %*% Res_mat)/(year.num-1-1))
 
 #--- Obtain the covariance matrix for beta.hat
 TT <- cbind(rep(1,12),2010:2021)
@@ -156,4 +177,4 @@ beta0 <- -0.5
 T2_Stat <- merge(Beta_Stat,Sd_Stat) 
 T2_Stat <- T2_Stat[,.(Latitude,Longitude,beta_hat,beta_sd,mu_hat,State.Code,T2 = (beta_hat-beta0)/beta_sd)]
 #Corr.est is the covariance matrix for T2
-save.image("Data/Ozone_Tmp.RData")
+save.image("Simu_2dSMT_RealData/Data/Ozone_Tmp.RData")

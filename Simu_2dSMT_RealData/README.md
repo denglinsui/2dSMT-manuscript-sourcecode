@@ -37,12 +37,12 @@ R CMD INSTALL TwoDSpatial_0.0.0.9000.tar.gz
 * Download data from http://www.epa.gov/airexplorer/index.htm and save in `Data/Ozone` (You should obtain the files from  `annual_conc_by_monitor_2000.csv` to `annual_conc_by_monitor_2021.csv` ).
 * Run `LoadOzone.R` to prepare data for Ozone.
 * Run `Ozone_Gen_Stat.R` to obtain test statistis for identifying the annual increases of ozone.
-* Run `Ozone_Visual.R` to reprocedure Figure S.10 in the supplementary material.
+* Run `Ozone_Visual.R` to reprocedure Figure S.17 in the supplement.
 
 ## Real Data Analysis
 
-* Run `Ozone_2D.R` to conduct hypothesis testing ` (Also load `Tools/All_q_est_functions.R` in simulation codes.).
+* Run `Ozone_2D.R` to conduct hypothesis testing  (Also load `Tools/All_q_est_functions.R` in simulation codes.).
 * Run `OzoneCONO.R` to reproduce Figure 10 in the main paper.
-* Run `Ozone_2D_Extract_Info.R` to obatin the information of Tables S.1 and S.2 in the supplementary material.
-* Run `OzoneSimu.R` to reproduce Table 1 in the main paper.
+* Run `Ozone_2D_Extract_Info.R` to obatin the information of Tables S.1 and S.2 in the supplement.
+* Run `OzoneSimu.R` to reproduce Tables 1, S.3 and S.4 .
 
