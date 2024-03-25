@@ -1,0 +1,277 @@
+---
+title: "FDP_POWER(CovariateGroup)"
+author: "Linsui Deng"
+date: "2021/4/20"
+output: html_document
+---
+
+```{r}
+#==== Set root
+rm(list=ls())
+
+root <- '../Result/Simulation1D_spa_grp_m900'
+Print_dir <- dir(path=root,pattern="*size1const0.1.*FALSE$*",full.names = T)
+#Print_dir <- dir(path=root,pattern="*size1*",full.names = T)
+```
+
+```{r fdr_pow_output}
+fdp_Res <- NULL
+pow_Res <- NULL
+fdp_Res_se <- NULL
+pow_Res_se <- NULL
+fdp_Res_t <- NULL
+pow_Res_t <- NULL
+fdp_Res_f <- NULL
+pow_Res_f <- NULL
+Mag_all <- NULL
+R_prop <- NULL
+Mag_t <- NULL
+R_prop_t <- NULL
+mu_type_t <- NULL
+Cov_type_t <- NULL
+Mag_f <- NULL
+R_prop_f <- NULL
+mu_type_f <- NULL
+Cov_type_f <- NULL
+mu_type_all <- NULL
+Cov_type_all <- NULL
+Estcov <- NULL
+for(print_dir in Print_dir){
+Print_file_full <- list.files(print_dir,pattern="*.RData",full.names = T)
+  
+for(print_file_full in Print_file_full){
+  load(print_file_full)
+  print(print_file_full)
+  #print(length(fdp_Res))
+  fdp_Res <- c(fdp_Res, fdp_pow_print[1,])
+  pow_Res <- c(pow_Res, fdp_pow_print[2,])
+  fdp_Res_se <- c(fdp_Res_se, apply(fdp_res,2,sd)/sqrt(dim(fdp_res)[2]))
+  pow_Res_se <- c(pow_Res_se, apply(pow_res,2,sd)/sqrt(dim(pow_res)[2]))
+  mu_type_all <- c(mu_type_all,mu_type)
+  Cov_type_all <- c(Cov_type_all,Cov_type)
+  Mag_all <- c(Mag_all,magnitude)
+  #R_prop <- c(R_prop, R)
+  if(estcov){
+  fdp_Res_t <- c(fdp_Res_t, fdp_pow_print[1,])
+  pow_Res_t <- c(pow_Res_t, fdp_pow_print[2,])
+  mu_type_t <- c(mu_type_t,mu_type)
+  Cov_type_t <- c(Cov_type_t,Cov_type)
+  Mag_t <- c(Mag_t,magnitude)
+  }else{
+  fdp_Res_f <- c(fdp_Res_f, fdp_pow_print[1,])
+  pow_Res_f <- c(pow_Res_f, fdp_pow_print[2,])
+  mu_type_f <- c(mu_type_f,mu_type)
+  Cov_type_f <- c(Cov_type_f,Cov_type)
+  Mag_f <- c(Mag_f,magnitude)
+  }
+  print(dim(fdp_pow_print))
+}
+}
+fdp_res_t <- c(fdp_Res_t,c())
+fdp_res_f <- c(fdp_Res_f,c())
+```
+
+```{r }
+library(reshape2)
+Method <- colnames(fdp_pow_print)
+#Method <-c('BH','1D','1D.pis','1D.pis2','LAW','SABHA',
+#           paste(c("2D","2D.qhat","2D.pis2"),rep(c(1,5,9),each=3)))
+#Method <- paste(Method,rep(c("est","true"),each=length(Method)))
+Method_num <- length(Method)
+data <- data.frame(FDP=fdp_Res,
+                   POWER=pow_Res,
+                   FDP_se=fdp_Res_se,
+                   POWER_se=pow_Res_se,
+                   mu_type=factor(rep(mu_type_all, each=Method_num),
+                                  levels=c("Sparse","Medium","Dense")),
+                   Cov_type=factor(rep(Cov_type_all, each=Method_num),
+                                  levels=c("Weak","Medium","Strong")),
+                   magnitude = rep(Mag_all, each=Method_num),
+                   Alg=rep(Method,times=length(Cov_type)))
+#data <- melt(data,id = c("mu_type","Cov_type","Alg","magnitude"))
+```
+
+```{r ReorganizeData}
+library(reshape2)
+Methods <- colnames(fdp_pow_print)
+#Methods <-c('BH','1D','1D.pis','1D.pis2','LAW','SABHA',
+#           paste(c("2D","2D.qhat","2D.pis2"),rep(c(1,5,9),each=3)))
+#Methods <- paste(Methods,rep(c("est","true"),each=length(Methods)))
+Methods_num <- length(Methods)
+data <- data.frame(FDP=fdp_Res,
+                   POWER=pow_Res,
+                   FDP_se=fdp_Res_se,
+                   POWER_se=pow_Res_se,
+                   mu_type=factor(rep(paste(mu_type_all,"Signal"), each=Methods_num),
+                                  levels=c("Sparse Signal","Medium Signal","Dense Signal")),
+                   Cov_type=factor(rep(paste(Cov_type_all,"Corr"), each=Methods_num),
+                                  levels=c("Weak Corr","Medium Corr","Strong Corr")),
+                   magnitude = rep(Mag_all, each=Methods_num),
+                   Method=rep(Methods,times=length(Cov_type)))
+#data <- melt(data,id = c("mu_type","Cov_type","Method","magnitude"))
+```
+
+```{r Plot Graph_1}
+library(ggplot2)
+library(plyr)
+require(latex2exp)
+library(dplyr)
+
+dummy1 <- data.frame(variable="FDP",q=c(q))
+data_1 <- data %>% filter(Method %in% c(#'1D',
+                                        '1D.pis2',
+                                        '1D.pis2.Grp.SA','1D.pis2.Grp.LAWS',
+                                        #'2D 4',
+                                        '2D.pis2 4','2D.pis2.Grp.SA 4',
+                                        '2D.pis2.Grp.LAWS 4')) 
+
+data_1$Method <- revalue(data_1$Method, c(#"1D"="BH",
+                                          "1D.pis2" = "ST",
+                                        "1D.pis2.Grp.SA"="SAGrp",
+                                        "1D.pis2.Grp.LAWS"="LAWSGrp",
+                                       # '2D 4'="2D(BH)",
+                                          "2D.pis2 4" = "2D(ST)",
+                                        "2D.pis2.Grp.SA 4"="2D(SAGrp)",
+                                        "2D.pis2.Grp.LAWS 4"="2D(LAWSGrp)"))
+
+```
+
+
+```{r define colors}
+
+color_Panel <- c("BH"="#B2DF8A", 
+                 "2D(BH)"="#33A02C", 
+                 "ST"= "#A6CEE3" ,
+                 "2D(ST)"= "#1F78B4" ,
+                 "SAGrp"="#FB9A99", 
+                 "2D(SAGrp)"="#E31A1C", 
+                 "LAWSGrp"= "#CAB2D6",
+                 "2D(LAWSGrp)"= "#6A3D9A")
+
+labels_Panel <- unname(TeX(c("BH","2D(BH)","ST","2D(ST)",
+                             "$SA_{Grp}$", "$2D(SA_{Grp})$","$LAWS_{Grp}$","$2D(LAWS_{Grp})$")))
+names(labels_Panel)=names(color_Panel)
+
+linetype_Panel <- c("BH"=0, 
+                 "2D(BH)"=1, 
+                 "ST"=2 ,
+                 "2D(ST)"= 3 ,
+                 "SAGrp"=4, 
+                 "2D(SAGrp)"=5, 
+                 "LAWSGrp"= 6,
+                 "2D(LAWSGrp)"= 7)
+```
+
+
+```{r}
+library(forcats)
+data_1 <- data_1 %>% #filter(magnitude >1)%>%
+  mutate(Method = fct_relevel(Method,
+            "BH","2D(BH)",
+            "ST","2D(ST)",
+            "SAGrp","2D(SAGrp)",
+            "LAWSGrp","2D(LAWSGrp)"))
+p_FDP <-
+  ggplot(data=data_1,aes(x=factor(magnitude),y=FDP, fill = Method))+
+  geom_bar(color="black",stat = 'identity',position="dodge")+
+  geom_errorbar(aes(ymin=FDP-FDP_se, ymax=FDP+FDP_se), width=.2,
+                 position=position_dodge(.9))+
+  #ylim(c(0,0.2))+
+  #scale_shape_manual(values=c(1,2,3,4,5,6,7,8,9))+
+  facet_grid(. ~ Cov_type,scales = "free_y")+    
+  #scale_color_brewer(palette = "Paired")+
+  #scale_fill_brewer(palette = "Paired")+
+  scale_fill_manual(values = color_Panel,labels=labels_Panel)+
+  geom_hline(data=dummy1,aes(yintercept = q),linetype=2)+
+  ylab("False Discovery Proportion")+
+  xlab(TeX("$\\gamma$"))+
+  theme_bw() +
+  theme(#panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 15),
+        strip.text.y = element_text(size = 15),
+        axis.title=element_text(size=15),
+        axis.text=element_text(size=12),
+        legend.position = "bottom")
+
+p_FDP
+
+```
+
+```{r}
+detach("package:plyr", unload = TRUE)
+POW_Imp <- function(x,y){
+  (x-y)/y
+}
+FDP_Inf <- function(x,y){
+  x-y
+}
+
+POW_Improve <- data_1 %>% 
+  group_by(magnitude,Cov_type,mu_type) %>% 
+  summarize(`2D(BH)`=POW_Imp(POWER[Method=="2D(BH)"],POWER[Method=="BH"]),
+            `2D(ST)`=POW_Imp(POWER[Method=="2D(ST)"],POWER[Method=="ST"]),
+            `2D(SAGrp)`=POW_Imp(POWER[Method=="2D(SAGrp)"],POWER[Method=="SAGrp"]),
+            `2D(LAWSGrp)`=POW_Imp(POWER[Method=="2D(LAWSGrp)"],POWER[Method=="LAWSGrp"]))
+POW_Imp <- melt(POW_Improve, id.vars = c("magnitude","Cov_type","mu_type"),value.name = "POW_Imp",variable.name = "Method")
+
+data_2 <- left_join(data_1,POW_Imp,by=c("magnitude","Cov_type","mu_type","Method"))
+```
+
+```{r}
+
+ylim_up <- 1
+
+p_POW <-
+  ggplot(data=data_2,aes(x=factor(magnitude),y=POWER, fill = Method))+
+  geom_bar(
+           color="black",stat = 'identity',position="dodge")+
+  geom_errorbar(aes(ymin=POWER-POWER_se, ymax=POWER+POWER_se), width=.2,
+                 position=position_dodge(.9))+
+  geom_text(aes(label = scales::percent(POW_Imp,0.01), x = factor(magnitude), y = POWER), 
+            position = position_dodge(width = 1), vjust = 0.2,angle = 90, hjust=-0.2,# mv
+           # position = position_dodge(width = 1), vjust = 0,angle = 90, hjust=-0.1,#For spline
+           # position = position_dodge(width = 1), vjust = 0,angle = 90, hjust=-0.2,#For unif
+            size=3,fontface=2)+
+  #ylim(c(0,1.1))+
+  ylim(c(0,ylim_up))+
+  #scale_shape_manual(values=c(1,2,3,4,5,6,7,8,9))+
+  facet_grid(. ~ Cov_type,scales = "free_y")+
+  ylab("Percentage of Discoveries")+
+  xlab(TeX("$\\gamma$"))+
+  #scale_color_brewer(palette = "Paired")+
+  #scale_fill_brewer(palette = "Paired")+
+  scale_fill_manual(values = color_Panel,labels=labels_Panel)+
+  theme_bw() +
+  theme(#panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 15),
+        strip.text.y = element_text(size = 15),
+        axis.title=element_text(size=15),
+        axis.text=element_text(size=12))
+
+p_POW
+
+```
+
+```{r}
+library(cowplot)
+
+grobs <- get_legend(p_FDP)
+pgrid <- plot_grid(p_FDP+theme(legend.position = "none",
+                                     axis.text.x = element_blank(),
+                                     axis.ticks.x  = element_blank())+
+                           labs(x = NULL),
+                         p_POW+theme(legend.position = "none",
+                                     strip.text.x = element_blank()
+                                     ), labels = c('A', 'B'),
+                         nrow=2,
+                         rel_heights = c(0.4,0.7),
+                         label_size = 12)
+p_grid <- plot_grid(pgrid, grobs, nrow = 2, rel_heights = c(1, .075))
+p_grid
+
+save_plot("../Figure/Result_Spa_Grp.pdf",p_grid,base_height=8.2,base_width=10)
+```
+
+

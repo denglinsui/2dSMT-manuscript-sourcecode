@@ -2,38 +2,13 @@
 
 ## Start of problem independent section
 options(digits=5)
-require(qvalue)
-require(CompRandFld)
-require(np)
-library("doMC")
-library(fields)
-setwd('~/project/2DSpatial')
-#setwd("D:/RUC/project/multiple\ testing/2DSpatial")
-source('Spatial_Detection_ma.R')
-source('Tools/Basic.R')
-source('Tools/laws_used.R')
-source('Tools/Fix_GenData.R')
-source('Tools/Simu_Step_ma.R')
-source('Tools/Adapt_pis.R')
-source('Tools/Hard_Group.R')
-source('Tools/Init_Setting.R')
-source('Tools/All_q_est_functions.R')
-source('Tools/accumulation_test_functions.R')
 
-library(CAMT)
-library(IHW)
-library(adaptMT)
-library(mgcv)
-library(FDRreg)
-library(dbh)
-#source("https://www.stat.uchicago.edu/~rina/sabha/All_q_est_functions.R")
-#source('https://www.stat.uchicago.edu/~rina/accumulationtests/accumulation_test_functions.R')
-
+setwd("../")
+source("Simulation/Simu_Init.R")
 
 source('bash/read_bash.R')
 #Initialize Parameter (For Testing)
 set.seed(10) ## Fix unif
-q <- 0.1
 n <- 1 # sample size
 data.type <- "SquareSpline"
 
@@ -42,20 +17,23 @@ m <- 900 # point size
 
 point <- matrix(seq(0,30,length.out=m), 
                   m, 1, byrow = F) 
+h <-c(1,2,3,4,7,10,13,16) #c(1,5,9)
+
+##=======New Setting for m=2000======
+#m <- 2000
+if(m == 2000){
+  point <- matrix(seq(0,60,length.out=m), 
+                  m, 1, byrow = F) 
+  h <- 4
+}
 
 #Initial Dist and Sigma
 #Dist.p <- Dist(m)
 Dist.p <- as.matrix(dist(point))
 #Setting
-h <-c(1,2,3,4,7,10,13,16) #c(1,5,9)
 h.len <- length(h)
 detect.m <- "top.k"
 cor.type <- "cor"
-k <- 1
-rho.eps <- 0.1
-cores <- 4
-reptime <- 50
-const <- q
 registerDoMC(cores = cores)
 
 fdp_res <- NULL
@@ -80,7 +58,15 @@ Sigma.eps.p <- I_S$Sigma.eps.p
 n <- 1
 estcov <- F
 
-save.folder.name <- "Simulation1D"
+save.folder.name <- paste0("Simulation1D","_m",m)
+#foldername = paste0("Result/Simulation/2d_smoothing_k2(size",n," ",
+#save.folder.name <- "Simulation1D_unif"
+#save.folder.name <- "Simulation1D_mv"
+foldername = paste0("Result/",save.folder.name)
+if(!dir.exists(foldername)){
+  dir.create(foldername)
+  dir.create(paste0(foldername,"/Tmp"))
+}
 save.image(file="Result/tmp_pre.RData")
 print("Start Simu......")
     rr <- foreach(jj = 1:reptime,
@@ -91,8 +77,10 @@ print("Start Simu......")
                                                      const = const,
                                                      magnitude = magnitude,
                                                      Cov_type = Cov_type,
+                                                     EmpMethod=EmpMethod,
                                                      mu_type = mu_type,
-save.folder.name = save.folder.name)
+                                                     tau.tm = tau.tm,
+                                                     save.folder.name = save.folder.name)
     save.image(file="Result/tmp.RData")
     seed <- numeric(reptime)
     for(i in 1:reptime){
@@ -108,7 +96,7 @@ save.folder.name = save.folder.name)
                   "dBH","IHW","IHW(NULL)",
                   "1D","1D.laws","1D.sabha", 
                   "1D.pis2","1D.ihw","1D.ihw.null")
-    inside.name <- c("2D ","2D.laws ","2D.sabha ",
+    inside.name <- c("2D ","2D.rect ","2D.laws ","2D.sabha ",
                      "2D.pis2 ","2D.ihw ","2D.ihw.null ")
     fdp_pow_print <- rbind(apply(fdp_res,2,mean),apply(pow_res,2,mean))
     if(is.null(h)){
@@ -128,13 +116,6 @@ save.folder.name = save.folder.name)
 #  }
 #}
 
-#foldername = paste0("Result/Simulation/2d_smoothing_k2(size",n," ",
-#save.folder.name <- "Simulation1D_unif"
-#save.folder.name <- "Simulation1D_mv"
-foldername = paste0("Result/",save.folder.name)
-if(!dir.exists(foldername)){
-  dir.create(foldername)
-}
 
 foldername = paste0(foldername,"/2d_smoothing_k1(size",n,"const",const," est_cov",estcov)
 if(!dir.exists(foldername)){

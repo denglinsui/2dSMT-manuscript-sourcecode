@@ -259,3 +259,51 @@ dev.off()
 #ggsave(file="Figure/2D_mu.eps",width = 9,height=3)
 
 ###======================================
+
+###================== One Dimensional: mu (Spline) ====================
+m <- 900 # point size
+
+set.seed(10)
+point <- matrix(seq(0,30,length.out=m), 
+                m, 1, byrow = F) 
+magnitude <- 1
+method <- "uc.spline"
+
+Dist.p <- as.matrix(dist(point))
+
+I_S <- Init_Setting_1D_spa_grp(
+  Cov_type = 1,
+  magnitude = 1,
+  #mu_gen_machine = "uc.unif",
+  #mu_gen_machine = "mvnorm",
+  point = point,
+  Dist.p = Dist.p)
+
+data <- data.frame(mu=c(I_S$mu),
+                   x=rep(point,times=1),
+                   Group = paste0("G",I_S$grp))
+
+data%>% group_by(Group)%>% summarize(mean(mu==0))
+
+p <- 
+  ggplot(data,aes(x=x,y=mu,color=Group))+
+  geom_line()+ theme_bw() +
+  scale_color_manual(values=c("G1"="#33A02C",
+                       "G2"="#1F78B4",
+                       "G3"="#E31A1C",
+                       "G4"="#6A3D9A"))+
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "bottom",
+        legend.title = element_text(size=15),
+        legend.text = element_text(size=15,hjust = 0),
+        axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 20),
+        axis.title=element_text(size=20),
+        axis.text=element_text(size=15))+
+  xlab("s")+ylab(TeX("\\mu(s)"))
+#p
+cairo_ps("Figure/1D_mu_spa_grp.eps",width = 5,height=4)
+p
+dev.off()
+

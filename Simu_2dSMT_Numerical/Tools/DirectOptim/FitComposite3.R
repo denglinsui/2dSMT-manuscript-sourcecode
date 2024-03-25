@@ -1,8 +1,13 @@
-source('~/project/2DSpatial/Tools/DirectOptim/Likelihood2.R')
-source('~/project/2DSpatial/Tools/DirectOptim/CheckInput2.R')
-source('~/project/2DSpatial/Tools/DirectOptim/WlsInit2.R')
-source('~/project/2DSpatial/Tools/DirectOptim/InitParam2.R')
-source('~/project/2DSpatial/Tools/DirectOptim/loglik2.R')
+# source('~/project/2DSpatial/Tools/DirectOptim/Likelihood2.R')
+# source('~/project/2DSpatial/Tools/DirectOptim/CheckInput2.R')
+# source('~/project/2DSpatial/Tools/DirectOptim/WlsInit2.R')
+# source('~/project/2DSpatial/Tools/DirectOptim/InitParam2.R')
+# source('~/project/2DSpatial/Tools/DirectOptim/loglik2.R')
+source('Tools/DirectOptim/Likelihood2.R')
+source('Tools/DirectOptim/CheckInput2.R')
+source('Tools/DirectOptim/WlsInit2.R')
+source('DirectOptim/InitParam2.R')
+source('DirectOptim/loglik2.R')
 
 FitComposite3 <- function (data, coordx, coordy = NULL, coordt = NULL, corrmodel, 
                            distance = "Eucl", fixed = NULL, grid = FALSE, likelihood = "Marginal", 

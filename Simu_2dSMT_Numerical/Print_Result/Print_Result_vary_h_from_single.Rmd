@@ -1,7 +1,6 @@
 ---
 title: "FDP_POWER"
 author: "Linsui Deng"
-date: "2021/4/20"
 output: html_document
 ---
 
@@ -13,10 +12,10 @@ rm(list=ls())
 #setwd("D:/RUC/project/multiple\ testing/2DSpatial")
 root <- 'Result/Simulation1D/2d_smoothing_k1(size1)'
 
-root <- 'Result/Simulation1D'
-root <- 'Result/Simulation1D_Mv'
+root <- 'Result/Simulation1D_mv'
 root <- 'Result/Simulation1D_unif'
-Print_dir <- dir(path=root,pattern="*size1const0.1.*FALSE$*",full.names = T)
+root <- 'Result/Simulation1D'
+Print_dir <- dir(path=paste0("../",root),pattern="*size1const0.1.*FALSE$*",full.names = T)
 #root <- 'Result/Simulation2D'
 #Print_dir <- 'Result/Simulation2D'
 ```
@@ -48,6 +47,13 @@ Print_file_full <- list.files(print_dir,pattern="*.RData",full.names = T)
   
 for(print_file_full in Print_file_full){
   load(print_file_full)
+  
+Methods <- colnames(fdp_pow_print)
+Methods <- c(colnames(fdp_pow_print)[1:15],'1D.ihw.null',
+             paste(rep(c('2D','2D.laws','2D.sabha','2D.pis2','2D.ihw','2D.ihw.null'),times=length(h)),rep(h,each=6))) 
+colnames(fdp_pow_print) <- Methods
+colnames(fdp_res) <- Methods
+colnames(pow_res) <- Methods
   print(print_file_full)
   #print(length(fdp_Res))
   fdp_Res <- c(fdp_Res, fdp_pow_print[1,])
@@ -79,7 +85,7 @@ fdp_res_f <- c(fdp_Res_f,c())
 
 ```{r ReorganizeData:ad_hoc}
 library(reshape2)
-Method <- colnames(fdp_pow_print)
+
 fp_type <- c("fdp","pow")
 mth_type_0 <- c("BH","Storey","LAWS","SABHA","IHW","IHW(NULL)")
 #mth_type_0 <- c("BH","LAWS","SABHA","Storey","IHW","IHW(NULL)")
@@ -174,15 +180,18 @@ library(RColorBrewer)
 cols=brewer.pal(n = 12, name = "Paired")[2*(1:6)]
 
 
-if(root == 'Result/Simulation1D_Mv'){
+if(root %in% c('Result/Simulation1D_mv','Result/Simulation1D_mv_m2000')){
+  mag <- 2
 Data1 <- Data %>% filter(magnitude=="mag: 2")
 }
 
-if(root == 'Result/Simulation1D_unif'){
+if(root %in%  c('Result/Simulation1D_unif','Result/Simulation1D_unif_m2000')){
+  mag <- 1
 Data1 <- Data %>% filter(magnitude=="mag: 1")
 }
 
-if(root == 'Result/Simulation1D'){
+if(root %in%  c('Result/Simulation1D','Result/Simulation1D_m2000')){
+  mag <- 2
 Data1 <- Data %>% filter(magnitude=="mag: 2")
 }
 dummy1 <- data.frame(variable="FDP",q=c(q))
@@ -195,7 +204,7 @@ p <-
   scale_x_continuous(breaks=c(-5, 0, 5,10,15),
                    labels=c("1D", 0, 5,10,15))+
  # ylim(c(0,0.4))+
-  geom_errorbar(aes(ymin=FDP-FDP_se, ymax=FDP+FDP_se), width=.2,
+  geom_errorbar(aes(ymin=FDP-1.96*FDP_se, ymax=FDP+1.96*FDP_se), width=.2,
                  position=position_dodge(0.05))+
   facet_grid(mu_type ~ Cov_type,scales = "free_y")+
   geom_hline(data=dummy1,aes(yintercept = q),linetype=2)+
@@ -211,17 +220,19 @@ p <-
   xlab("Num of Neighors")+ylab("False Discovery Proportion")
 
 p
-if(root == 'Result/Simulation1D_Mv'){
-  ggsave(file="Figure/Mv_FDP(mag2)_h.eps",width = 12, height =6)
-}
 
-if(root == 'Result/Simulation1D_unif'){
-  ggsave(file="Figure/Unif_FDP(mag2)_h.eps",width = 12, height =6)
-}
-
-if(root == 'Result/Simulation1D'){
-  ggsave(file="Figure/Spline_FDP(mag2)_h.eps",width = 12, height =6)
-}
+ggsave(file=paste0("../Figure/",strsplit(root,"/")[[1]][2],"_mag_",mag,"_FDP_h.eps"),width = 12, height =6)
+# if(root == 'Result/Simulation1D_mv'){
+#   ggsave(file="Figure/Mv_FDP(mag2)_h.eps",width = 12, height =6)
+# }
+# 
+# if(root == 'Result/Simulation1D_unif'){
+#   ggsave(file="Figure/Unif_FDP(mag2)_h.eps",width = 12, height =6)
+# }
+# 
+# if(root == 'Result/Simulation1D'){
+#   ggsave(file="Figure/Spline_FDP(mag2)_h.eps",width = 12, height =6)
+# }
 ```
 
 
@@ -234,7 +245,7 @@ p <-
   geom_line(data=Data1 %>% filter(Dim=="2D"),aes(x=h,y=POWER,color=Method, linetype=Method))+
   scale_x_continuous(breaks=c(-5, 0, 5,10,15),
                    labels=c("1D", 0, 5,10,15))+
-  geom_errorbar(aes(ymin=POWER-POWER_se, ymax=POWER+POWER_se), width=.2,
+  geom_errorbar(aes(ymin=POWER-1.96*POWER_se, ymax=POWER+1.96*POWER_se), width=.2,
                  position=position_dodge(0.05))+
   facet_grid(mu_type ~ Cov_type,scales = "free_y")+
   scale_color_manual(values = cols)+
@@ -249,17 +260,20 @@ p <-
   xlab("Num of Neighors")+ylab("Percentage of Discoveries")
 p
 #data1%>%filter(magnitude=="mag: 1"&r=="r: 0.5")
-if(root == 'Result/Simulation1D_Mv'){
-  ggsave(file="Figure/Mv_POWER(mag2)_h.eps",width = 12, height =6)
-}
 
-if(root == 'Result/Simulation1D_unif'){
-  ggsave(file="Figure/Unif_POWER(mag2)_h.eps",width = 12, height =6)
-}
+ggsave(file=paste0("../Figure/",strsplit(root,"/")[[1]][2],"_mag_",mag,"_POWER_h.eps"),width = 12, height =6)
 
-if(root == 'Result/Simulation1D'){
-  ggsave(file="Figure/Spline_POWER(mag2)_h.eps",width = 12, height =6)
-}
+# if(root == 'Result/Simulation1D_mv'){
+#   ggsave(file="Figure/Mv_POWER(mag2)_h.eps",width = 12, height =6)
+# }
+# 
+# if(root == 'Result/Simulation1D_unif'){
+#   ggsave(file="Figure/Unif_POWER(mag2)_h.eps",width = 12, height =6)
+# }
+# 
+# if(root == 'Result/Simulation1D'){
+#   ggsave(file="Figure/Spline_POWER(mag2)_h.eps",width = 12, height =6)
+# }
 
 #ggsave(file="Figure/Spline_POWER(mag2)_h.eps",width = 12, height =6)
 #ggsave(file="Figure/Unif_POWER(mag1)_h.eps",width = 12, height =6)

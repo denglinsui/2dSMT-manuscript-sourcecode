@@ -1,0 +1,92 @@
+---
+title: "FDP_POWER(CovariateGroup)"
+author: "Linsui Deng"
+date: "2021/4/20"
+output: html_document
+---
+
+```{r}
+#==== Set root
+rm(list=ls())
+
+root <- '../Result/Simulation1D_CalTime'
+Print_dir <- dir(path=root,pattern="*size1const0.1.*FALSE$*",full.names = T)
+#Print_dir <- dir(path=root,pattern="*size1*",full.names = T)
+```
+
+```{r fdr_pow_output}
+library(dplyr)
+result = NULL
+result_all = NULL
+for(print_dir in Print_dir){
+Print_file_full <- list.files(print_dir,pattern="*.RData",full.names = T)
+  
+for(print_file_full in Print_file_full){
+  load(print_file_full)
+  print(print_file_full)
+  #print(length(fdp_Res))
+  result = rbind(result,
+                 c(rowMeans(rr),magnitude,m,apply(rr,1,sd)))
+  result_all = rbind(result_all,
+                 cbind(t(rr),magnitude,m))
+}
+}
+```
+
+
+```{r ReorganizeData}
+library(ggplot2)
+data = data.frame(Num=c(result[,1:5]),
+                  NumSd=c(result[,9:13]),
+                  Type = factor(paste0("S",rep(0:4,each = dim(result)[1]))),
+                  Facet_Type = factor(paste0("S",rep(0:4,each = dim(result)[1]))),
+                  m = result[,8],
+                  magnitude=result[,7]) %>% filter(magnitude==3)
+data_combine = data
+data_combine$Facet_Type = "All"
+data = rbind(data_combine,data)
+
+
+data_all = data.frame(Num=c(result_all[,1:5]),
+                  Type = factor(paste0("S",rep(0:4,each = dim(result_all)[1]))),
+                  Facet_Type = factor(paste0("S",rep(0:4,each = dim(result_all)[1]))),
+                  m = result_all[,8],
+                  magnitude=result_all[,7]) %>% filter(magnitude==3)
+data_combine_all = data_all
+data_combine_all$Facet_Type = "All"
+data_all = rbind(data_combine_all,data_all)
+```
+
+```{r}
+ggplot(data,aes(x=m,y=(Num),color=Type))+
+  facet_wrap(Facet_Type~.,scales = "free_y")+
+  geom_line()
+```
+
+```{r Plot Graph_1}
+library(plyr)
+require(latex2exp)
+Color_Panel = c("S0"="#FDBF6F","S1"= "#CAB2D6",
+                               "S2"="#1F78B4",
+                               "S3" ="#33A02C",
+                               "S4"="#E31A1C"
+                               )
+ggplot(data_all,aes(x=m,y=(Num),color=Type,fill=Type))+
+  geom_smooth(level=0.95)+
+  facet_wrap(Facet_Type~.,scales = "free_y")+
+  theme_bw() +
+  scale_color_manual(values=Color_Panel)+
+  scale_fill_manual(values=Color_Panel)+
+  ylab("The Number of Candidate Cutoffs")+
+  theme(#panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),axis.line = element_line(colour = "black"),
+        strip.text.x = element_text(size = 15),
+        strip.text.y = element_text(size = 15),
+        axis.title=element_text(size=15),
+        axis.text=element_text(size=12),
+        legend.text =  element_text(size = 15),
+        legend.title =  element_text(size = 15),
+        legend.position = "bottom")
+ggsave(file="../Figure/Cal_Time.pdf",width=9,height=6)
+
+```

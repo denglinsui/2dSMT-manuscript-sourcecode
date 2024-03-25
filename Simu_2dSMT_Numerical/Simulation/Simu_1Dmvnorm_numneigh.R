@@ -16,14 +16,7 @@ m <- 900 # point size
 point <- matrix(seq(0,30,length.out=m), 
                   m, 1, byrow = F) 
 
-h <-c(1,2,3,4,7,10,13,16) #c(1,5,9)
-##=======New Setting for m=2000======
-#m <- 2000
-if(m == 2000){
-  point <- matrix(seq(0,60,length.out=m), 
-                  m, 1, byrow = F) 
-  h <- 4
-}
+h <- 4
 #Initial Dist and Sigma
 #Dist.p <- Dist(m)
 Dist.p <- as.matrix(dist(point))
@@ -55,7 +48,7 @@ Sigma.eps.p <- I_S$Sigma.eps.p
 n <- 1
 estcov <- F
 
-save.folder.name <- paste0("Simulation1D_mv","_m",m)
+save.folder.name <- paste0("Simulation1D_neigh_mv","_m",m)
 #foldername = paste0("Result/Simulation/2d_smoothing_k2(size",n," ",
 #save.folder.name <- "Simulation1D_unif"
 #save.folder.name <- "Simulation1D_mv"
@@ -67,7 +60,7 @@ if(!dir.exists(foldername)){
 save.image(file="Result/tmp_pre.RData")
 print("Start Simu......")
     rr <- foreach(jj = 1:reptime,
-                  .combine = cbind) %dopar% one_step_1D(h, 
+                  .combine = cbind) %dopar% one_step_1D_num_neigh(h, 
                                                      detect.m = detect.m, 
                                                      seed = jj,
                                                      mu = mu,
@@ -80,20 +73,19 @@ print("Start Simu......")
 save.folder.name = save.folder.name)
     save.image(file="Result/tmp.RData")
     seed <- numeric(reptime)
+    h.extra.mat=h.current.mat=NULL
     for(i in 1:reptime){
-      fdp_res <- rbind(fdp_res, rr[[3*i-2]])
-      pow_res <- rbind(pow_res, rr[[3*i-1]])
-      seed <- rr[[3*i]]
+      fdp_res <- rbind(fdp_res, rr[[5*i-4]])
+      pow_res <- rbind(pow_res, rr[[5*i-3]])
+      h.extra.mat <- rbind(h.extra.mat, rr[[5*i-2]])
+      h.current.mat <- rbind(h.current.mat, rr[[5*i-1]])
+      seed <- rr[[5*i]]
     }
     
-    pre.name <- c("BH","LAWS","SABHA",
-                  "AdaMT","CAMT","FDRreg(T)",
-                  #"FDRreg(E)",
-                  "dBH","IHW","IHW(NULL)",
-                  "1D","1D.laws","1D.sabha", 
-                  "1D.pis2","1D.ihw","1D.ihw.null")
-    inside.name <- c("2D ","2D.rect ","2D.laws ","2D.sabha ",
-                     "2D.pis2 ","2D.ihw ","2D.ihw.null ")
+    pre.name <- c("1D","1D.pis2")
+    inside.name <- c("2D.Type1 ","2D.pis2.Type1 ",
+                     "2D.Type2 ","2D.pis2.Type2 ",
+                     "2D.Type3 ","2D.pis2.Type3 ")
     fdp_pow_print <- rbind(apply(fdp_res,2,mean),apply(pow_res,2,mean))
     if(is.null(h)){
       colnames(fdp_pow_print) <- pre.name
